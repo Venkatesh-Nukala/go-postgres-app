@@ -2,10 +2,11 @@ FROM golang:1.21
 
 WORKDIR /app
 
-COPY . .
+COPY go.mod go.sum ./
 
-RUN go mod init app
-RUN go mod tidy
+RUN go mod download
+
+COPY . .
 
 RUN go build -o main .
 
