@@ -1,48 +1,49 @@
 pipeline {
-    agent {
-        label 'Docker-Agent'
-    }
+    agent { label 'Docker-Agent' }
 
     stages {
 
-            stage('Checkout Code') {
-                steps {
-                    git branch: 'main', url: 'https://github.com/Venkatesh-Nukala/go-postgres-app.git'
-                }
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Venkatesh-Nukala/go-postgres-app.git'
             }
+        }
 
-            stage('Build Image') {
-                steps {
-                    sh 'docker compose build web'
-                }
+        stage('Build Image') {
+            steps {
+                sh 'docker compose build'
             }
+        }
 
-            stage('Run Containers') {
-                steps {
+        stage('Deploy Containers') {
+            steps {
+                sh '''
+                set -e
+                docker compose down || true
+                docker compose up -d
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                docker ps
+                curl -f http://localhost:8081
+                '''
+            }
+        }
+
+        stage('Push to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
                     sh '''
-                    docker compose down || true
-                    docker compose up -d
+                    echo $DOCKERHUB_PASSWORD | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                    docker tag go-postgres-app:latest $DOCKERHUB_USERNAME/go-postgres-app:latest
+                    docker push $DOCKERHUB_USERNAME/go-postgres-app:latest
                     '''
                 }
             }
-
-            stage('Verify Deployment') {
-                steps {
-                    sh 'docker ps'
-                }
-            }
-
-            stage('Push to DockerHub') {
-                steps {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                        sh '''
-                        echo $DOCKERHUB_PASSWORD | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                        docker tag go-postgres-app_web $DOCKERHUB_USERNAME/go-postgres-app:latest
-                        docker push $DOCKERHUB_USERNAME/go-postgres-app:latest
-                        '''
-                    }
-                }
-            }
-            
+        }
     }
 }
