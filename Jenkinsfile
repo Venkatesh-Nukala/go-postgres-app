@@ -26,13 +26,15 @@ pipeline {
             }
         }
             stage('Push to DockerHub') {
-                steps {
-                    sh '''
-                    docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_PASSWORD"
-                    docker tag go-postgres-app_web $DOCKERHUB_USERNAME/go-postgres-app:latest
-                    docker push $DOCKERHUB_USERNAME/go-postgres-app:latest
-                    '''
-                }
+                    steps {
+                        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                            sh '''
+                            docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_PASSWORD"
+                            docker tag go-postgres-app_web $DOCKERHUB_USERNAME/go-postgres-app:latest
+                            docker push $DOCKERHUB_USERNAME/go-postgres-app:latest
+                            '''
+                        }
+                    }
             }
 
     }
