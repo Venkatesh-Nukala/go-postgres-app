@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'Docker-Agent'
+    }
 
     stages {
 
@@ -9,17 +11,11 @@ pipeline {
             }
         }
 
-        stage('Build Containers') {
-            steps {
-                sh 'docker compose build'
-            }
-        }
-
         stage('Run Containers') {
             steps {
                 sh '''
                 docker compose down || true
-                docker compose up -d
+                docker compose up --build -d
                 '''
             }
         }
@@ -29,6 +25,15 @@ pipeline {
                 sh 'docker ps'
             }
         }
+            stage('Push to DockerHub') {
+                steps {
+                    sh '''
+                    docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_PASSWORD"
+                    docker tag go-postgres-app_web $DOCKERHUB_USERNAME/go-postgres-app:latest
+                    docker push $DOCKERHUB_USERNAME/go-postgres-app:latest
+                    '''
+                }
+            }
 
     }
 }
