@@ -2,6 +2,7 @@ services:
 
   web:
     build: ./app
+    image: go-postgres-app:latest
     ports:
       - "8081:8080"
     depends_on:
